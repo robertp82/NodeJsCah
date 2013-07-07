@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <%= constants.CssIncludes %>
+    <%= constants.JQueryIncludes %>
+  </head>
+
+<body>
+  <div data-role="page" class="type-home1" id="pageLogin">
+    <div class="content-primary">
+
+       <form id="loginForm" action="/auth" method="get" data-ajax="false">
+           <fieldset>
+           
+           <asp:Literal runat="server" ID="litMessage"></asp:Literal>
+
+           <label for="username">Username:</label>
+           <input type="text" name="username" id="username" value=""  />
+
+           <label for="password">Password:</label>
+           <input type="password" name="password" id="password" value="" />
+
+           <input id="submitLogin" type="submit" value="Login" data-role="button" data-inline="true" data-theme="b" />
+
+           <hr />
+           Don't have a login? <a href="register">Sign Up</a>
+           </fieldset>
+       </form>
+
+    </div>
+</div>
+
+</body>
+</html>

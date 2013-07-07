@@ -1,0 +1,52 @@
+<% if (userStatus == userStatuses.WaitDealer) { %>
+<p>People submitted:</p>
+<ul>
+  <% for (var i = 0, ii = pendingResponses.length; i < ii; i++) { %>
+    <li><%=  activeCard.getFullPhrase(pendingResponses[i]) %></li>
+  <% } %>
+</ul>
+<% } %>
+<% if (userStatus == userStatuses.WaitSelect || userStatus == userStatuses.WaitDealer) { %>
+  <p>You submitted: <%= activeCard.getFullPhrase(submittedCards) %></p>
+<% } else if (userStatus != userStatuses.WaitJoin && userStatus != userStatuses.OwnerWaitJoin) { %>
+  <%= activeCard.getBlankText() %>
+<% } %>
+
+<% if (userStatus == userStatuses.SelectCards) { %>
+<form id="submit_response">
+  <% for (var i = 0, ii = activeCard.getQuestionCount(); i < ii; i++) { %>
+     <select id="card<%=i %>" name="card<%= i %>">
+     <% cards.forEach(function(card) { %>
+     <%= '<option value="' + card.id + '">' + card.getText() + '</option>' %>
+     <% }); %>
+     </select>
+  <% };%>
+  <input type="submit" value="Play Cards" data-theme="b"  />
+</form>
+<script>
+$(function() { $("#submit_response").submit(submitResponse); });
+</script>
+<% } else if (userStatus == userStatuses.DealerSelectCards) { %>
+<% function getAnswerValue(response) { 
+   var answerValue = ''; 
+   for (var i = 0, ii = response.length; i < ii; i++) { 
+	answerValue += response[i].id;
+	if (i < response.length -1) { 
+		answerValue +=','; 
+	} 
+    } 
+    return answerValue;
+}%> 
+<form id="select_response" action="/selectResponse" method="post" target="_blank">
+  <fieldset data-role="controlgroup">
+  <% for (var i = 0, ii = pendingResponses.length; i < ii; i++) { %>
+    <%= '<input type="radio" id="response_radio_' + i + '" name="responseCardIds" value="' + getAnswerValue(pendingResponses[i])  + '">' %>
+    <%= '<label for="response_radio_' + i + '">' + activeCard.getFullPhrase(pendingResponses[i]) + '</label>' %>
+    <% } %>
+    </fieldset>
+  <input type="submit" value="Pick Winner" data-theme="b"/>
+  </form>
+<script>
+$(function() { $("#select_response").submit(selectResponse); });
+</script>
+<% } %>

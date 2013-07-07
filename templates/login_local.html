@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <%= constants.CssIncludes %>
+    <%= constants.JQueryIncludes %>
+  </head>
+
+<body>
+  <div data-role="page" class="type-home1" id="pageLogin">
+    <div class="content-primary">
+
+       <form id="loginForm" action="" method="POST">
+           <fieldset>
+           
+           <asp:Literal runat="server" ID="litMessage"></asp:Literal>
+
+           <label for="username">Username:</label>
+           <input type="text" name="username" id="username" value=""  />
+
+           <label for="password">Password:</label>
+           <input type="password" name="password" id="password" value="" />
+
+           <input id="submitLogin" type="submit" value="Login" data-role="button" data-inline="true" data-theme="b" />
+
+           <hr />
+           Don't have a login? <a href="register">Sign Up</a>
+           </fieldset>
+       </form>
+
+    </div>
+</div>
+
+</body>
+<script>
+
+$(function() { $("#submitLogin").click(function(e) { 
+e.preventDefault(); 
+var username = $("#username").val();
+var password = $("#password").val();
+loginWebUpdate(username, password); 
+return false;
+} ) }); 
+
+function loginWebUpdate(u, p) { 
+
+//alert(username); alert(password);return;
+
+$.ajax({
+ url: "<%=constants.HostUrl%>:<%=constants.WebPort%><%=constants.ApiPrefix%>user/auth?username=" + u + "&password="+p,
+ type: "GET",
+ dataType: "html",
+ success: function(data) { 
+//alert(data); 
+var uid = data;
+if (data != undefined && data.length > 1) {
+window.location.replace('login?uid=' + uid);
+}
+else {
+ alert('Please enter a valid login.');
+} 
+},
+ error: function(data) { alert('Please enter a valid login.'); }
+});
+
+};
+
+</script>
+
+</html>

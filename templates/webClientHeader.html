@@ -1,0 +1,9 @@
+<h3><%= header %></h3>
+<% if (userStatus == userStatuses.OwnerWaitJoin) { %>
+<form id="startSessionForm">
+  <input type="submit" value="Start Game" data-theme="b"/>
+</form>
+<script>
+$(function() { $("#startSessionForm").submit(startSession); });
+</script>
+<% } %>

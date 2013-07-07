@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+  <head>
+    <title><%= constants.AppName %></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <%= constants.CssIncludes %>
+    <%= constants.JQueryIncludes %>
+  </head>
+
+<body>
+  <div data-role="page" class="type-home1" id="pageLogin">
+    <div class="content-primary">
+      <h3><%= constants.AppName %></h3>
+      <div id="loginText">Please login or signup below to play.</div>
+      <br />
+      <div>
+	<form id="loginForm" action="" method="POST">
+          <fieldset>
+           
+           <asp:Literal runat="server" ID="litMessage"></asp:Literal>
+
+           <label for="username">Username:</label>
+           <input type="text" name="username" id="username" value=""  />
+	   
+           <label for="password">Password:</label>
+           <input type="password" name="password" id="password" value="" />
+	   
+           <input id="submitLogin" type="submit" value="Login" data-role="button" data-inline="true" data-theme="b" />
+	   
+           <hr />
+           Don't have a login? <a href="register">Sign Up</a>
+          </fieldset>
+	</form>
+      </div>
+    </div>
+</div>
+
+</body>
+<script>
+
+$(function() { $("#submitLogin").click(function(e) { 
+e.preventDefault(); 
+var username = $("#username").val();
+var password = $("#password").val();
+loginWebUpdate(username, password); 
+return false;
+} ) }); 
+
+function loginWebUpdate(u, p) { 
+
+//alert(username); alert(password);return;
+
+$.ajax({
+ url: "https://<%=constants.ParseUrl%>/1/login",
+ data: { username : u, password: p },
+ type: "GET",
+ dataType: "json",
+ beforeSend: function(xhr) { xhr.setRequestHeader('X-Parse-Application-Id', '<%= constants.ParseAppId %>'); xhr.setRequestHeader('X-Parse-REST-API-Key', '<%= constants.ParseRestId %>'); },
+ success: function(data) { 
+//alert(data); 
+var uid = data.objectId
+window.location.replace('login?uid=' + uid); 
+},
+ error: function(data) { alert('Please enter a valid login'); }
+});
+
+};
+
+</script>
+
+</html>

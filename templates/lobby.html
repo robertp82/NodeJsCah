@@ -1,0 +1,116 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Lobby</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <%= constants.CssIncludes %>
+    <%= constants.JQueryIncludes %>
+
+  </head>
+
+<body>
+  <div data-role="page" class="type-home1" id="pageLobby">
+    <div class="content-primary">
+      <div id="mainDiv">
+	<h3>Welcome, please select a game.</h3>
+	<ul data-role="listview" data-inset="true" data-filter="false" id="lobbyList" >	  
+	</ul>
+      </div>
+      <div id="addDiv">
+	<h3>Create a Game</h3>
+	<form id="createGameForm" action="/lobby/game" method="post" data-ajax="false" >
+	  <select id="type" name="type">
+	    <% sessionTypes.forEach(function(sessionType) { %>
+	    <%= '<option value="' + sessionType.id + '">' + sessionType.text + '</option>' %>
+	    <% }); %>
+	  </select>
+	  <input type="submit" value="Create Game" data-theme="b"  />
+	</form>
+
+	<a href="/logout" rel="external">Logout</a>
+      </div>
+    </div>
+</div>
+
+</body>
+<script>
+
+function addSession(session, url, serverId) {
+var game = '';
+switch (session.type) {
+ case 1: game = 'Cards Against Humanity'; break;
+ case 2: game = 'Go Fish'; break;
+}
+var link = '<a href ="' + url + '/join?sid=' + session.id + '&uid=<%=uid%>" rel="external" class="ui-link-inherit">';
+var suffix = '</a>';
+if (session.status == 2) {
+ var inSession = false;
+ for (var i = session.userList.length - 1; i > -1; i--) {
+  if (session.userList[i].id == '<%= uid %>' ) {
+    inSession = true;
+    break;
+ }
+}
+ if (!inSession) { 
+   link = '';
+   suffix = ' (started) ';
+ }
+}
+var sessionId = serverId + session.id;
+var item = '[' + sessionId + '] ' + game + '<span class="ui-li-count">' + session.userList.length + '</span>'; 
+var item = link + item + suffix;
+return '<li>' + item + '</li>'
+}
+
+function addSessions(sessions, url, serverId) {
+var html = '';
+for (var i = 0, ii = sessions.length; i < ii; i++ ) {
+   var session = sessions[i];
+//   alert(JSON.stringify(session));					    
+   html = html +  addSession(session, url, serverId);
+}
+$('#lobbyList').append(html);
+$('#lobbyList').trigger("create");
+$('#mainDiv').trigger("create");
+$('#lobbyList').listview('refresh');
+}
+
+function lobbyUpdate(server, serverId) { 
+
+var full = 'http://' + server + '<%= constants.ApiPrefix %>session/list?callback=func';
+//alert(full);
+$.getJSON(full, function(data) {
+
+addSessions(data, server, serverId);
+}).error(function(e) { 
+if (e.responseText) {
+var result = JSON.parse(e.responseText.substring(5, e.responseText.length -1)); 
+//alert(JSON.stringify(result)); 
+addSessions(result, 'http://' + server, serverId); 
+}
+}); 
+};
+
+$.ajax({
+ url: "https://<%=constants.ParseUrl%>/1/classes/ServerInstance",
+ type: "GET",
+ dataType: "json",
+ beforeSend: function(xhr) { xhr.setRequestHeader('X-Parse-Application-Id', '<%= constants.ParseAppId %>'); xhr.setRequestHeader('X-Parse-REST-API-Key', '<%= constants.ParseRestId %>'); },
+ success: function(data) { 
+var servers = data.results; 
+//alert(JSON.stringify(servers));
+for (var i = servers.length - 1; i > -1; i--) {
+    var server = servers[i];
+    if (server.env == '<%=constants.ParseEnv%>') {
+//    alert(JSON.stringify(server));
+    var url = server.host + ':' + server.port;
+    lobbyUpdate(url, server.serverId);   
+ }
+}
+
+},
+ error: function(data) { alert('Please enter a valid login'); }
+});
+</script>
+
+</html>

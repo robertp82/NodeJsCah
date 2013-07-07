@@ -1,0 +1,225 @@
+<!doctype html>
+<html>
+  <head>
+    <title><%= constants.AppName %></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <%= constants.CssIncludes %>
+    <%= constants.JQueryIncludes %>
+    <%= constants.SocketIoIncludes %>
+    <% if (jsIncludes != undefined)  { %>
+    <%= '<script src="' +  jsIncludes + '"></script>' %>
+    <% } %>
+  </head>
+
+<body>
+  <div data-role="page" class="type-home1" id="pageMain">
+    <div class="content-primary">
+   <!--   <div id="logDiv" data-role="collapsible" data-collapsed="false">
+	<h3>Log</h3> -->
+	<div id="logContentsDiv" class="msgContainerDiv"></div>
+	<div id="chatContentsDiv" class="msgContainerDiv"></div>
+	  <div data-role="fieldcontain">
+	    <input type="text" name="chatText" id="chatText" value=""  /><button id="sendChat" data-inline="true" data-theme="b">&nbsp;&nbsp;Send Chat&nbsp;&nbsp;</button>
+	  </div>
+      <!--</div> -->
+      <div id="mainDiv"></div>
+    </div>
+    <div class="content-secondary">
+      You can <a href="/leave?sid=<%= sid %>" rel="external">Quit</a>
+      or stay in but visit the <a href="/lobby" rel="external">Lobby</a>
+      <div id="priorDiv" data-role="collapsible" data-collapsed="false"></div>
+      <div id="usersDiv" data-role="collapsible" data-collapsed="false"></div>
+      <div id="cardsDiv" data-role="collapsible" data-collapsed="<%= collapseCards %>"></div>
+      <% if (user.isAdmin) { %>
+      <div id="adminDiv" data-role="collapsible" data-collapsed="true">
+	<h3>Admin Actions</h3>
+	<form id="adminForm" action="adminAction" method="post" data-ajax="false" >
+	<input type="hidden" id="sid" name="sid" value="<%=sid%>">
+	<input type="hidden" id="uid" name="uid" value="<%=uid%>">
+	<div data-role="fieldcontain">
+	      <fieldset data-role="controlgroup" data-type="horizontal">
+		<input type="radio" name="action" id="radio-view-a" value="Pause"  />
+		<label for="radio-view-a">Pause</label>
+		<input type="radio" name="action" id="radio-view-b" value="Kick"  />
+		<label for="radio-view-b">Kick</label>
+		<input type="radio" name="action" id="radio-view-c" value="Admin"  />
+		<label for="radio-view-c">Give Admin</label>
+	      </fieldset>	      
+	</div> 	
+	<div id="adminPlayerSelect"></div>	
+	      <button id="adminButton" data-theme="b">Do It</button>
+	</form>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+</body>
+<script>
+var socket;
+
+function connectSocketIo() {
+ socket = io.connect("<%= constants.HostUrl + ':' + constants.SocketIoPort %>");
+ socket.emit("login", { uid: "<%= uid %>", sid: "<%= sid %>" });
+ socket.on("update", function() { webUpdate(); } ); 
+ socket.on("chat", function(data) { chatUpdate(data); } );
+ socket.on("log", function(data) { logUpdate(data); } );
+ socket.on("connected", function(data) { logUpdate(data + ' connected.'); userUpdate(); } );
+ socket.on("disconnected", function(data) { logUpdate(data + ' disconnected.'); userUpdate();  } );
+ socket.on("validation", function(data) { alert(data); });
+}
+
+connectSocketIo();
+
+function getStatus(html) {  
+var startString = '<h3>';
+var endString = '</h3>';
+var startIndex = html.indexOf(startString);
+var endIndex = html.indexOf(endString);
+var response = html.substring(startIndex + startString.length, endIndex); 
+return response; };
+
+function userUpdate() { 
+
+$.get('<%=constants.ApiPrefix%>users?sid=<%= sid %>', function(data) {
+updateUsers(data);
+<% if (user.isAdmin) { %>
+updateUsersAdmin(data);
+<% } %>
+}); };
+
+
+function webUpdate() { 
+
+$.get('<%=constants.ApiPrefix%>allUpdates?sid=<%= sid %>&uid=<%= uid %>', function(data) {
+updateUsers(data.statuses);
+updateCards(data.cards);
+if (data.priorWinner != undefined) {
+  updatePrior(data.priorWinner);
+}
+});
+
+$.get('webUpdate?sid=<%= sid %>&uid=<%= uid %>', function(data) {
+var responses = data;
+var before = $("#mainDiv").html();
+var after = responses;
+after = getStatus(after);
+if (before.indexOf(after) == -1) {
+  $("#mainDiv").html(responses);
+  $("#mainDiv").trigger("create");
+} 
+});};
+
+function startSession(e) {
+e.preventDefault();
+$.get('<%= constants.ApiPrefix %>session/start?sid=<%= sid %>', function(data) {
+});
+return false;
+};
+
+$(function() { $("#sendChat").click(function(e) { e.preventDefault(); $msg = $("#chatText").val().trim(); if ($msg == '') return; socket.emit("chat", { message: $msg }); $("#chatText").val(""); } ) });; 
+
+function chatUpdate(data) { var name = data.name; var message = data.message; $("#chatContentsDiv").append("<div class='message'><span class='username'>" + name + ":</span> " + message + "</div>");$("#chatContentsDiv").scrollTop($("#chatContentsDiv")[0].scrollHeight);};
+function logUpdate(data) { var name = data; var message = data; $("#logContentsDiv").append("<div class='message'>" + message + "</div>");$("#logContentsDiv").scrollTop($("#logContentsDiv")[0].scrollHeight);};$(function()    {        var  testTextBox = $('#chatText');       var code =null;    testTextBox.keypress(function(e)         {            code= (e.keyCode ? e.keyCode : e.which);            if (code == 13) { $('#sendChat').click();        e.preventDefault();       }  });     });
+
+function updateUsers(users) { 
+var results = '<div id="usersDiv" data-role="collapsible" data-collapsed="false">';
+results += '<h3>Players</h3>';
+results += '<ul data-role="listview" data-inset="true" data-theme="d">';
+for (var i = 0, ii = users.length; i < ii; i++) {
+   var user = users[i];
+   var statusIcon = '<img src="<%= constants.IconLoading %>" alt="Loading" class="ui-li-icon">';
+   if (user.connectStatus == 1) {
+     if (user.own == 0) {	    
+       statusIcon = '<img src="<%= constants.IconActive %>" alt="Live" class="ui-li-icon">';
+     }
+     else {   
+      statusIcon = '<img src="<%= constants.IconOwner %>" alt="Live" class="ui-li-icon">';
+     }
+   }
+   else if (user.connectStatus == 2) {
+   statusIcon = '<img src="<%= constants.IconTimeout %>" alt="Off" class="ui-li-icon">';
+   }
+   				       
+   results += '<li>' +statusIcon + user.name + ' ' + user.status + '<span class="ui-li-count">' + user.score + '</span></li>';
+}
+results += '</ul>';
+results += '</div>'
+$('#usersDiv').html(results);
+$('#usersDiv').trigger("create");
+}
+
+<% if (user.isAdmin) { %>
+function updateUsersAdmin(users) {
+var results ='<div id="adminPlayerSelect"><select id="tuid" name="tuid">';
+for (var i = 0, ii =users.length; i <ii; i++) {
+   if (users[i].id != '<%= user.id %>') {
+var user = users[i];					 
+results += '<option value="' + user.id + '">' + user.name + '</option>';
+}
+}
+results += '</select>';
+results += '</div>';
+$('#adminPlayerSelect').html(results);
+$('#adminPlayerSelect').trigger("create");
+
+}
+<% } %>
+
+function getBlankText(text) {
+    return text.replace(/%s/g, "___");
+}
+
+function updateCards(cards, collapse) { 
+var results = '<div id="cardsDiv" data-role="collapsible" data-collapsed="<%= collapseCards %>">';
+results += '<h3>Your Cards</h3>';
+results += '<ul data-role="listview" data-inset="true" data-theme="d">';
+for (var i = cards.length - 1; i > -1; i--) {
+   var card = cards[i];
+   results += '<li>' + getBlankText(card.text) + '</li>';
+}
+results += '</ul>';
+results += '</div>'
+$('#cardsDiv').html(results);
+$('#cardsDiv').trigger("create");
+}
+
+function updatePrior(priorInfo) { 
+//alert(JSON.stringify(cards));
+var results = '<div id="priorDiv" data-role="collapsible" data-collapsed="false">';
+if (priorInfo != undefined) {
+    results += '<h3>Prior Winner</h3>';
+    results += '<ul data-role="listview" data-inset="true" data-theme="d">';
+    var image = '';
+    if (priorInfo.priorUrl) {
+    image = '<img src="' + priorInfo.priorUrl + '" />';
+    } 
+    results += '<li>' + image + priorInfo.priorPhrase + '</li>';
+    results += '<li>Submitted by: <b>' + priorInfo.priorWinner + '</b></li>';
+    results += '</ul>';
+}
+results += '</div>'
+$('#priorDiv').html(results);
+$('#priorDiv').trigger("create");
+}
+
+$(function () { webUpdate() });
+
+function submitResponse(e) { 
+e.preventDefault(); 
+dataString = $("#submit_response").serialize();  
+socket.emit("sendResponse", { response: dataString }); 
+return false;
+};
+
+function selectResponse(e) { 
+e.preventDefault(); 
+dataString = $("#select_response").serialize();
+socket.emit("selectResponse", { response: dataString });
+return false; 
+};
+
+</script>
+
+</html>

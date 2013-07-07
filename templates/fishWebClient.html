@@ -1,0 +1,26 @@
+<% if (userStatus == userStatuses.SelectCards || userStatus == userStatuses.SelectCardsAgain || userStatus == userStatuses.SelectCardsAgainDraw) { %>
+<form id="submit_response">
+  <input type="hidden" id="uid" name="uid" value="<%=uid%>">
+  <select id="player" name="player">
+     <% targetUsers.forEach(function(targetUser) { %>
+     <%= '<option value="' + targetUser[0] + '">' + targetUser[1] + '</option>' %>
+     <% }); %>
+  </select>
+
+  <select id="cards" name="cards">
+     <% targetCards.forEach(function(targetCard) { %>
+     <%= '<option value="' + targetCard + '">' + targetCard + '</option>' %>
+     <% }); %>
+  </select>
+
+  <input type="submit" value="Play Cards" data-theme="b"  />
+</form>
+
+<script>
+$(function() { $("#submit_response").submit(function(e) { 
+ e.preventDefault(); 
+ dataString = $("#submit_response").serialize(); 
+ socket.emit("sendResponse", { response: dataString }); return false; }); });
+</script>
+
+<% } %>
